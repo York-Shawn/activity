@@ -1,7 +1,7 @@
 package main
 
 import (
-	"activity/internal/server"
+	"github.com/York-Shawn/activity/activitylog/internal/server"
 )
 
 func main() {

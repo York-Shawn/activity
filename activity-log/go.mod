@@ -1,4 +1,4 @@
-module activity
+module github.com/York-Shawn/activity/activitylog
 
 go 1.17
 

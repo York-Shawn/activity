@@ -2,30 +2,35 @@ package server
 
 import (
 	"fmt"
-	"time"
+	"log"
+	"sync"
+
+	api "github.com/York-Shawn/activity/activity-log"
 )
 
 var ErrIDNotFound = fmt.Errorf("ID not found")
 
-type Activity struct {
-	Time        time.Time `json:"time"`
-	Description string    `json:"description"`
-	ID          uint64    `json:"id"`
-}
-
 type Activities struct {
-	activities []Activity
+	mu         sync.Mutex
+	activities []api.Activity
 }
 
-func (c *Activities) Insert(activity Activity) uint64 {
-	activity.ID = uint64(len(c.activities))
+func (c *Activities) Insert(activity api.Activity) int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	activity.ID = len(c.activities) + 1
 	c.activities = append(c.activities, activity)
+	log.Printf("Added %v", activity)
 	return activity.ID
 }
 
-func (c *Activities) Retrieve(id uint64) (Activity, error) {
-	if id >= uint64(len(c.activities)) {
-		return Activity{}, ErrIDNotFound
+func (c *Activities) Retrieve(id int) (api.Activity, error) {
+	log.Printf("Getting %d", id)
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if id >= len(c.activities) {
+		log.Printf("Id not found")
+		return api.Activity{}, ErrIDNotFound
 	}
-	return c.activities[id], nil
+	return c.activities[id-1], nil
 }

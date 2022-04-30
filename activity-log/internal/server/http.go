@@ -2,19 +2,11 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
+	api "github.com/York-Shawn/activity/activity-log"
 	"github.com/gorilla/mux"
 )
-
-type IDDocument struct {
-	ID uint64 `json:"id"`
-}
-
-type ActivityDocument struct {
-	Activity Activity `json:"activity"`
-}
 
 type httpServer struct {
 	Activities *Activities
@@ -25,16 +17,16 @@ func NewHTTPServer(addr string) *http.Server {
 		Activities: &Activities{},
 	}
 	r := mux.NewRouter()
-	r.HandleFunc("/", server.handleGet).Methods("GET")
-	r.HandleFunc("/", server.handlePost).Methods("POST")
+	r.HandleFunc("/", server.handleGetByID).Methods("GET")
+	r.HandleFunc("/", server.handleInsert).Methods("POST")
 	return &http.Server{
 		Addr:    addr,
 		Handler: r,
 	}
 }
 
-func (s *httpServer) handleGet(w http.ResponseWriter, r *http.Request) {
-	var req IDDocument
+func (s *httpServer) handleGetByID(w http.ResponseWriter, r *http.Request) {
+	var req api.IDDocument
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -45,21 +37,31 @@ func (s *httpServer) handleGet(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	res := ActivityDocument{activity}
-	json.NewEncoder(w).Encode(res)
-	fmt.Fprintf(w, "get\n")
+	res := api.ActivityDocument{Activity: activity}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
-func (s *httpServer) handlePost(w http.ResponseWriter, r *http.Request) {
-	var req ActivityDocument
+func (s *httpServer) handleInsert(w http.ResponseWriter, r *http.Request) {
+	var req api.ActivityDocument
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	id := s.Activities.Insert(req.Activity)
-	res := IDDocument{ID: id}
-	json.NewEncoder(w).Encode(res)
-	fmt.Fprintf(w, "post\n")
+	res := api.IDDocument{ID: id}
+	err = json.NewEncoder(w).Encode(res)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
